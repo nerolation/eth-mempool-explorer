@@ -1,0 +1,4 @@
+flask>=3.0.0
+gunicorn>=21.0.0
+pyxatu>=1.10.0
+pandas>=2.0.0

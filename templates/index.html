@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block title %}Ethereum Block Explorer - Home{% endblock %}
+
+{% block scripts %}
+<script>
+    // Auto-refresh latest block every 12 seconds (one slot)
+    let currentBlock = {{ latest_block or 0 }};
+
+    async function updateLatestBlock() {
+        try {
+            const response = await fetch('/api/latest');
+            const data = await response.json();
+
+            if (data.block_number && data.block_number !== currentBlock) {
+                currentBlock = data.block_number;
+                const formatted = currentBlock.toLocaleString();
+                document.getElementById('latest-block-number').textContent = formatted;
+                document.getElementById('latest-block-link').href = '/block/' + currentBlock;
+
+                // Update the search input if it has the old value
+                const input = document.querySelector('input[name="block"]');
+                if (input && input.value == (currentBlock - 1)) {
+                    input.value = currentBlock;
+                }
+            }
+            document.getElementById('block-update-indicator').textContent = '';
+        } catch (error) {
+            document.getElementById('block-update-indicator').textContent = '(offline)';
+        }
+    }
+
+    // Update every 12 seconds
+    setInterval(updateLatestBlock, 12000);
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="flex flex-col items-center justify-center min-h-[60vh]">
+    <div class="text-center mb-12">
+        <h1 class="text-5xl font-bold mb-4">
+            <i class="fab fa-ethereum text-eth-blue mr-3"></i>
+            Block Explorer
+        </h1>
+        <p class="text-xl text-gray-400">
+            Analyze Ethereum blocks with mempool insights
+        </p>
+    </div>
+
+    <div class="w-full max-w-2xl">
+        <form action="/search" method="GET" class="relative">
+            <div class="glass rounded-2xl p-2 flex items-center">
+                <div class="flex-1 flex items-center">
+                    <i class="fas fa-search text-gray-400 ml-4 mr-3"></i>
+                    <input
+                        type="number"
+                        name="block"
+                        placeholder="Enter block number..."
+                        class="w-full bg-transparent border-none outline-none text-lg py-3 text-white placeholder-gray-500"
+                        required
+                        min="0"
+                        {% if latest_block %}value="{{ latest_block }}"{% endif %}
+                    >
+                </div>
+                <button
+                    type="submit"
+                    class="bg-eth-blue hover:bg-blue-600 text-white font-semibold px-8 py-3 rounded-xl transition-colors"
+                >
+                    Explore
+                </button>
+            </div>
+        </form>
+
+        {% if latest_block %}
+        <p class="text-center mt-4 text-gray-500">
+            Latest indexed block:
+            <a href="/block/{{ latest_block }}" id="latest-block-link" class="text-eth-blue hover:underline font-mono">
+                <span id="latest-block-number">{{ "{:,}".format(latest_block) }}</span>
+            </a>
+            <span id="block-update-indicator" class="ml-2 text-xs text-gray-600"></span>
+        </p>
+        {% endif %}
+    </div>
+
+    <div class="mt-16 grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-4xl">
+        <div class="glass rounded-xl p-6 text-center">
+            <i class="fas fa-eye text-3xl text-green-400 mb-3"></i>
+            <h3 class="font-semibold text-lg mb-2">Public Transactions</h3>
+            <p class="text-gray-400 text-sm">Transactions seen in the mempool before inclusion</p>
+        </div>
+        <div class="glass rounded-xl p-6 text-center">
+            <i class="fas fa-eye-slash text-3xl text-red-400 mb-3"></i>
+            <h3 class="font-semibold text-lg mb-2">Private Orderflow</h3>
+            <p class="text-gray-400 text-sm">Transactions not seen in public mempool</p>
+        </div>
+        <div class="glass rounded-xl p-6 text-center">
+            <i class="fas fa-clock text-3xl text-yellow-400 mb-3"></i>
+            <h3 class="font-semibold text-lg mb-2">Mempool Time</h3>
+            <p class="text-gray-400 text-sm">Time from first seen to block inclusion</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

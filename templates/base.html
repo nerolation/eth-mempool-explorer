@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Ethereum Block Explorer{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'eth-blue': '#627EEA',
+                        'eth-dark': '#1B1B1B',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+        }
+        .glass {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .table-row-hover:hover {
+            background: rgba(98, 126, 234, 0.1);
+        }
+        .pulse-dot {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen text-gray-100">
+    <!-- Loading Banner -->
+    <div id="loading-banner" class="fixed top-0 left-0 right-0 z-50 hidden">
+        <div class="bg-eth-blue/90 backdrop-blur-sm text-white py-3 px-4">
+            <div class="max-w-7xl mx-auto flex items-center justify-center space-x-3">
+                <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span id="loading-text">Loading block data...</span>
+            </div>
+        </div>
+    </div>
+
+    <nav class="glass border-b border-gray-700">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <a href="/" class="flex items-center space-x-3">
+                    <i class="fab fa-ethereum text-eth-blue text-2xl"></i>
+                    <span class="font-bold text-xl">Block Explorer</span>
+                </a>
+                <div class="flex items-center space-x-4">
+                    <span class="text-sm text-gray-400">Mempool Analytics</span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="glass border-t border-gray-700 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <p class="text-center text-gray-500 text-sm">
+                Powered by <a href="https://github.com/nerolation/pyxatu" class="text-eth-blue hover:underline">pyxatu</a>
+                &middot; Data from <a href="https://xatu.ethpandaops.io" class="text-eth-blue hover:underline">Xatu</a>
+                &middot; Built with ❤️ by <a href="https://twitter.com/nero_eth" class="text-eth-blue hover:underline">Toni</a>
+            </p>
+        </div>
+    </footer>
+
+    {% block scripts %}{% endblock %}
+
+    <script>
+        // Show loading banner when navigating to block pages
+        function showLoadingBanner(text) {
+            const banner = document.getElementById('loading-banner');
+            const loadingText = document.getElementById('loading-text');
+            if (banner) {
+                loadingText.textContent = text || 'Loading block data...';
+                banner.classList.remove('hidden');
+            }
+        }
+
+        // Intercept clicks on block links
+        document.addEventListener('click', function(e) {
+            const link = e.target.closest('a[href^="/block/"]');
+            if (link) {
+                showLoadingBanner('Loading block data...');
+            }
+        });
+
+        // Intercept search form submission
+        document.addEventListener('submit', function(e) {
+            const form = e.target.closest('form[action="/search"]');
+            if (form) {
+                const blockInput = form.querySelector('input[name="block"]');
+                if (blockInput && blockInput.value) {
+                    showLoadingBanner('Loading block ' + parseInt(blockInput.value).toLocaleString() + '...');
+                }
+            }
+        });
+
+        // Hide banner if page was loaded from cache (back/forward navigation)
+        window.addEventListener('pageshow', function(e) {
+            if (e.persisted) {
+                document.getElementById('loading-banner').classList.add('hidden');
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+
+{% block title %}Block {{ data.block_number }} - Ethereum Block Explorer{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+    <a href="/" class="text-gray-400 hover:text-white transition-colors">
+        <i class="fas fa-arrow-left mr-2"></i>Back to Search
+    </a>
+</div>
+
+<!-- Block Header -->
+<div class="glass rounded-2xl p-6 mb-6">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between">
+        <div>
+            <div class="flex flex-wrap items-center gap-3 mb-2">
+                <h1 class="text-3xl font-bold">
+                    Block <span class="text-eth-blue font-mono">{{ "{:,}".format(data.block_number) }}</span>
+                </h1>
+                <!-- Builder Badge -->
+                {% if data.builder.is_mev %}
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-500/20 text-purple-300 border border-purple-500/30" title="{{ data.builder.builder_pubkey }}">
+                    <i class="fas fa-hammer mr-2"></i>{{ data.builder.builder }}
+                </span>
+                {% else %}
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-500/20 text-gray-300 border border-gray-500/30">
+                    <i class="fas fa-home mr-2"></i>{{ data.builder.builder }}
+                </span>
+                {% endif %}
+            </div>
+            <div class="flex flex-wrap gap-4 text-gray-400">
+                <span><i class="fas fa-cube mr-2"></i>Slot: {{ "{:,}".format(data.slot) }}</span>
+                <span><i class="fas fa-clock mr-2"></i>{{ data.block_time }}</span>
+            </div>
+        </div>
+        <div class="mt-4 md:mt-0 flex gap-2">
+            {% if data.block_number > 0 %}
+            <a href="/block/{{ data.block_number - 1 }}" class="glass px-4 py-2 rounded-lg hover:bg-white/10 transition-colors">
+                <i class="fas fa-chevron-left"></i>
+            </a>
+            {% endif %}
+            <a href="/block/{{ data.block_number + 1 }}" class="glass px-4 py-2 rounded-lg hover:bg-white/10 transition-colors">
+                <i class="fas fa-chevron-right"></i>
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+    <div class="glass rounded-xl p-5">
+        <div class="text-gray-400 text-sm mb-1">Total Transactions</div>
+        <div class="text-2xl font-bold">{{ data.stats.total_txs }}</div>
+    </div>
+    <div class="glass rounded-xl p-5">
+        <div class="text-gray-400 text-sm mb-1 flex items-center">
+            <span class="w-2 h-2 bg-green-400 rounded-full mr-2"></span>
+            Public
+        </div>
+        <div class="text-2xl font-bold text-green-400">{{ data.stats.public_txs }}</div>
+    </div>
+    <div class="glass rounded-xl p-5">
+        <div class="text-gray-400 text-sm mb-1 flex items-center">
+            <span class="w-2 h-2 bg-red-400 rounded-full mr-2"></span>
+            Private Orderflow
+        </div>
+        <div class="text-2xl font-bold text-red-400">
+            {{ data.stats.private_txs }}
+            <span class="text-sm font-normal text-gray-500">({{ data.stats.private_percentage }}%)</span>
+        </div>
+    </div>
+    <div class="glass rounded-xl p-5">
+        <div class="text-gray-400 text-sm mb-1">Avg Mempool Time</div>
+        <div class="text-2xl font-bold text-yellow-400">
+            {% if data.stats.avg_mempool_time_ms > 0 %}
+                {{ "%.1f"|format(data.stats.avg_mempool_time_ms / 1000) }}s
+            {% else %}
+                -
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Mempool Time Stats (for public txs) -->
+{% if data.stats.public_txs > 0 %}
+<div class="glass rounded-xl p-5 mb-6">
+    <h3 class="text-lg font-semibold mb-3">Mempool Time Distribution (Public Transactions)</h3>
+    <div class="grid grid-cols-3 gap-4">
+        <div class="text-center">
+            <div class="text-gray-400 text-sm">Minimum</div>
+            <div class="text-xl font-mono">{{ "%.2f"|format(data.stats.min_mempool_time_ms / 1000) }}s</div>
+        </div>
+        <div class="text-center">
+            <div class="text-gray-400 text-sm">Average</div>
+            <div class="text-xl font-mono text-yellow-400">{{ "%.2f"|format(data.stats.avg_mempool_time_ms / 1000) }}s</div>
+        </div>
+        <div class="text-center">
+            <div class="text-gray-400 text-sm">Maximum</div>
+            <div class="text-xl font-mono">{{ "%.2f"|format(data.stats.max_mempool_time_ms / 1000) }}s</div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Transactions Table -->
+<div class="glass rounded-2xl overflow-hidden">
+    <div class="p-5 border-b border-gray-700">
+        <h2 class="text-xl font-semibold">
+            <i class="fas fa-list mr-2"></i>Transactions
+        </h2>
+    </div>
+
+    {% if data.transactions %}
+    <div class="overflow-x-auto">
+        <table class="w-full">
+            <thead class="bg-white/5">
+                <tr class="text-left text-gray-400 text-sm">
+                    <th class="px-5 py-3">#</th>
+                    <th class="px-5 py-3">Transaction Hash</th>
+                    <th class="px-5 py-3">From</th>
+                    <th class="px-5 py-3">To</th>
+                    <th class="px-5 py-3 text-right">Value (ETH)</th>
+                    <th class="px-5 py-3 text-center">Status</th>
+                    <th class="px-5 py-3 text-right">Mempool Time</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-700/50">
+                {% for tx in data.transactions %}
+                <tr class="table-row-hover transition-colors">
+                    <td class="px-5 py-4 text-gray-500">{{ tx.index }}</td>
+                    <td class="px-5 py-4">
+                        <a href="https://etherscan.io/tx/{{ tx.hash }}"
+                           target="_blank"
+                           class="font-mono text-sm text-eth-blue hover:underline">
+                            {{ tx.hash[:10] }}...{{ tx.hash[-8:] }}
+                            <i class="fas fa-external-link-alt ml-1 text-xs"></i>
+                        </a>
+                    </td>
+                    <td class="px-5 py-4">
+                        <span class="font-mono text-sm text-gray-300">
+                            {{ tx.from[:8] }}...{{ tx.from[-6:] }}
+                        </span>
+                    </td>
+                    <td class="px-5 py-4">
+                        {% if tx.to == 'Contract Creation' %}
+                            <span class="text-purple-400 text-sm">
+                                <i class="fas fa-file-code mr-1"></i>Contract Creation
+                            </span>
+                        {% else %}
+                            <span class="font-mono text-sm text-gray-300">
+                                {{ tx.to[:8] }}...{{ tx.to[-6:] }}
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td class="px-5 py-4 text-right font-mono text-sm">
+                        {% if tx.value_eth > 0 %}
+                            {{ "%.4f"|format(tx.value_eth) }}
+                        {% else %}
+                            <span class="text-gray-500">0</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-5 py-4 text-center">
+                        {% if tx.is_private %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-400/20 text-red-400">
+                                <i class="fas fa-eye-slash mr-1"></i>Private
+                            </span>
+                        {% else %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-400/20 text-green-400">
+                                <i class="fas fa-eye mr-1"></i>Public
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td class="px-5 py-4 text-right">
+                        {% if tx.mempool_time_ms %}
+                            <span class="font-mono text-sm">
+                                {{ "%.2f"|format(tx.mempool_time_ms / 1000) }}s
+                            </span>
+                        {% else %}
+                            <span class="text-gray-500">-</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="p-10 text-center text-gray-500">
+        <i class="fas fa-inbox text-4xl mb-4"></i>
+        <p>No transactions in this block</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- API Info -->
+<div class="mt-6 text-center text-sm text-gray-500">
+    <p>
+        API Endpoint:
+        <code class="bg-white/5 px-2 py-1 rounded font-mono">
+            /api/block/{{ data.block_number }}
+        </code>
+    </p>
+</div>
+{% endblock %}
