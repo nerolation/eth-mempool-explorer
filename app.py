@@ -27,7 +27,7 @@ load_builder_mapping()
 def get_xatu():
     global _xatu
     if _xatu is None:
-        _xatu = pyxatu.PyXatu()
+        _xatu = pyxatu.PyXatu(use_env_variables=True)
     return _xatu
 
 
