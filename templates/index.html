@@ -8,6 +8,13 @@
     let currentBlock = {{ latest_block or 0 }};
 
     async function updateLatestBlock() {
+        const blockNumEl = document.getElementById('latest-block-number');
+        const blockLinkEl = document.getElementById('latest-block-link');
+        const indicatorEl = document.getElementById('block-update-indicator');
+
+        // Elements don't exist if latest_block was not available on page load
+        if (!blockNumEl) return;
+
         try {
             const response = await fetch('/api/latest');
             const data = await response.json();
@@ -15,8 +22,8 @@
             if (data.block_number && data.block_number !== currentBlock) {
                 currentBlock = data.block_number;
                 const formatted = currentBlock.toLocaleString();
-                document.getElementById('latest-block-number').textContent = formatted;
-                document.getElementById('latest-block-link').href = '/block/' + currentBlock;
+                blockNumEl.textContent = formatted;
+                if (blockLinkEl) blockLinkEl.href = '/block/' + currentBlock;
 
                 // Update the search input if it has the old value
                 const input = document.querySelector('input[name="block"]');
@@ -24,9 +31,9 @@
                     input.value = currentBlock;
                 }
             }
-            document.getElementById('block-update-indicator').textContent = '';
+            if (indicatorEl) indicatorEl.textContent = '';
         } catch (error) {
-            document.getElementById('block-update-indicator').textContent = '(offline)';
+            if (indicatorEl) indicatorEl.textContent = '(offline)';
         }
     }
 
