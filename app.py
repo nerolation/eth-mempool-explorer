@@ -62,18 +62,19 @@ def get_builder_info(slot, slot_start_date_time):
 def get_latest_block():
     """Get the latest block number from the database."""
     xatu = get_xatu()
-    # Use recent time filter for partition pruning (3x faster)
-    result = xatu.execute_query("""
-        SELECT max(execution_payload_block_number) as block_number
-        FROM default.canonical_beacon_block
-        WHERE meta_network_name = 'mainnet'
-          AND slot_start_date_time >= now() - INTERVAL 1 HOUR
-    """, columns="block_number")
-    if result is not None and not result.empty:
-        value = result['block_number'].iloc[0]
-        # Check for None, NaN, and ClickHouse NULL representation '\N'
-        if value is not None and value != '\\N' and pd.notna(value):
-            return int(value)
+    # Try recent time first (faster due to partition pruning), fall back to wider window
+    for interval in ['1 HOUR', '1 DAY']:
+        result = xatu.execute_query(f"""
+            SELECT max(execution_payload_block_number) as block_number
+            FROM default.canonical_beacon_block
+            WHERE meta_network_name = 'mainnet'
+              AND slot_start_date_time >= now() - INTERVAL {interval}
+        """, columns="block_number")
+        if result is not None and not result.empty:
+            value = result['block_number'].iloc[0]
+            # Check for None, NaN, and ClickHouse NULL representation '\N'
+            if value is not None and value != '\\N' and pd.notna(value):
+                return int(value)
     return None
 
 
