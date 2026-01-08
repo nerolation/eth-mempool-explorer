@@ -69,8 +69,11 @@ def get_latest_block():
         WHERE meta_network_name = 'mainnet'
           AND slot_start_date_time >= now() - INTERVAL 1 HOUR
     """, columns="block_number")
-    if result is not None and not result.empty and result['block_number'].iloc[0] is not None:
-        return int(result['block_number'].iloc[0])
+    if result is not None and not result.empty:
+        value = result['block_number'].iloc[0]
+        # Check for None, NaN, and ClickHouse NULL representation '\N'
+        if value is not None and value != '\\N' and pd.notna(value):
+            return int(value)
     return None
 
 
